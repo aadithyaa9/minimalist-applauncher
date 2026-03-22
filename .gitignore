@@ -1,5 +1,4 @@
 .gradle
-/build/
 /.idea/
 /.jps/
 /local.properties
@@ -14,8 +13,6 @@
 captures/
 .externalNativeBuild
 .cxx
-/app/build/
-*.apk
 *.ap_
 *.dex
 *.class
