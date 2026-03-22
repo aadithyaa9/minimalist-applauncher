@@ -17,12 +17,14 @@ class PreferencesManager(private val context: Context) {
         val BLOCKED_APPS = stringSetPreferencesKey("blocked_apps")
         val HIDDEN_APPS = stringSetPreferencesKey("hidden_apps")
         val SCRATCH_PAD = stringPreferencesKey("scratch_pad")
+        val HABITS_JSON = stringPreferencesKey("habits_json")
     }
 
     val pinnedApps: Flow<Set<String>> = context.dataStore.data.map { it[Keys.PINNED_APPS] ?: emptySet() }
     val blockedApps: Flow<Set<String>> = context.dataStore.data.map { it[Keys.BLOCKED_APPS] ?: emptySet() }
     val hiddenApps: Flow<Set<String>> = context.dataStore.data.map { it[Keys.HIDDEN_APPS] ?: emptySet() }
     val scratchPad: Flow<String> = context.dataStore.data.map { it[Keys.SCRATCH_PAD] ?: "" }
+    val habitsJson: Flow<String?> = context.dataStore.data.map { it[Keys.HABITS_JSON] }
 
     suspend fun togglePin(packageName: String) {
         context.dataStore.edit { prefs ->
@@ -59,5 +61,9 @@ class PreferencesManager(private val context: Context) {
 
     suspend fun saveScratchPad(text: String) {
         context.dataStore.edit { it[Keys.SCRATCH_PAD] = text }
+    }
+
+    suspend fun saveHabitsJson(json: String) {
+        context.dataStore.edit { it[Keys.HABITS_JSON] = json }
     }
 }

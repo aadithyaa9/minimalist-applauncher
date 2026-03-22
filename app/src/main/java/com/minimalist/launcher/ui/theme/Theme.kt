@@ -10,29 +10,28 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-// Pure Minimalist Grayscale Palette
+// Absolute Black Theme
 val Black = Color(0xFF000000)
-val Surface1 = Color(0xFF0A0A0A)
-val Surface2 = Color(0xFF121212)
-val Surface3 = Color(0xFF1A1A1A)
+val Surface1 = Color(0xFF000000) // Changed from 0x0A0A0A
+val Surface2 = Color(0xFF000000) // Changed from 0x121212
+val Surface3 = Color(0xFF000000)
 val TextPrimary = Color(0xFFFFFFFF)
-val TextSecondary = Color(0xFFAAAAAA)
-val TextTertiary = Color(0xFF555555)
+val TextSecondary = Color(0xFF888888)
+val TextTertiary = Color(0xFF444444)
 
-// Changed Accent to a neutral Gray to remove all "app colors"
 val AccentGreen = Color(0xFFEEEEEE) 
-val AccentDim = Color(0xFF333333)
-val DividerColor = Color(0xFF1A1A1A)
+val AccentDim = Color(0xFF222222)
+val DividerColor = Color(0xFF111111)
 
 val LauncherColors = darkColorScheme(
     primary = AccentGreen,
     onPrimary = Black,
     background = Black,
-    surface = Surface1,
+    surface = Black,
     onSurface = TextPrimary,
     onSurfaceVariant = TextSecondary,
     outline = DividerColor,
-    surfaceVariant = Surface2,
+    surfaceVariant = Black,
     secondary = TextSecondary,
     onSecondary = Black,
     tertiary = TextTertiary,

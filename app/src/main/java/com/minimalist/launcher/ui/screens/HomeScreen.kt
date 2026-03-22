@@ -26,6 +26,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
     val currentTime by viewModel.currentTime.collectAsState()
     val currentDate by viewModel.currentDate.collectAsState()
     val greeting by viewModel.greeting.collectAsState()
+    val quote by viewModel.vinlandQuote.collectAsState()
     val pinnedApps by viewModel.pinnedApps.collectAsState()
     val activeTab by viewModel.activeTab.collectAsState()
 
@@ -60,8 +61,8 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 .padding(horizontal = 28.dp)
                 .padding(top = 56.dp, bottom = 24.dp)
         ) {
-            // Clock + greeting
-            TimeBlock(time = currentTime, date = currentDate, greeting = greeting)
+            // Clock + greeting + Quote
+            TimeBlock(time = currentTime, date = currentDate, greeting = greeting, quote = quote)
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -127,15 +128,15 @@ fun HomeScreen(viewModel: LauncherViewModel) {
 }
 
 @Composable
-fun TimeBlock(time: String, date: String, greeting: String) {
+fun TimeBlock(time: String, date: String, greeting: String, quote: String) {
     Column {
         Text(
             text = time,
             style = MaterialTheme.typography.displayLarge.copy(
                 color = TextPrimary,
                 fontWeight = FontWeight.Thin,
-                fontSize = 72.sp,
-                letterSpacing = (-3).sp
+                fontSize = 64.sp,
+                letterSpacing = (-2).sp
             )
         )
         Spacer(modifier = Modifier.height(4.dp))
@@ -146,13 +147,14 @@ fun TimeBlock(time: String, date: String, greeting: String) {
             color = TextSecondary,
             fontWeight = FontWeight.Normal
         )
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = greeting,
-            fontSize = 16.sp,
+            text = quote,
+            fontSize = 14.sp,
             color = AccentGreen,
             fontWeight = FontWeight.Light,
-            letterSpacing = 0.5.sp
+            lineHeight = 20.sp,
+            modifier = Modifier.padding(end = 32.dp)
         )
     }
 }

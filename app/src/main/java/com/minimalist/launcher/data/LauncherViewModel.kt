@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import org.json.JSONArray
+import org.json.JSONObject
 
 class LauncherViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -48,21 +50,17 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private val _greeting = MutableStateFlow("")
     val greeting: StateFlow<String> = _greeting.asStateFlow()
+    
+    private val _vinlandQuote = MutableStateFlow(getQuote())
+    val vinlandQuote: StateFlow<String> = _vinlandQuote.asStateFlow()
 
     // Focus Timer
     private val _focusSession = MutableStateFlow(FocusSession())
     val focusSession: StateFlow<FocusSession> = _focusSession.asStateFlow()
     private var timerJob: Job? = null
 
-    // Habits (Placeholder for persistence if needed)
-    private val _habits = MutableStateFlow(
-        listOf(
-            HabitItem("1", "Morning walk", "🚶", false, 3),
-            HabitItem("2", "Read 20 pages", "📚", false, 7),
-            HabitItem("3", "Meditate", "🧘", false, 1),
-            HabitItem("4", "No social media", "🚫", false, 0),
-        )
-    )
+    // Habits
+    private val _habits = MutableStateFlow<List<HabitItem>>(emptyList())
     val habits: StateFlow<List<HabitItem>> = _habits.asStateFlow()
 
     // Notes
@@ -83,6 +81,53 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         updateTime()
         startTimeClock()
         loadApps(application)
+        loadHabits()
+    }
+
+    private fun loadHabits() {
+        viewModelScope.launch {
+            prefs.habitsJson.collect { json ->
+                if (json != null) {
+                    val list = mutableListOf<HabitItem>()
+                    val arr = JSONArray(json)
+                    for (i in 0 until arr.length()) {
+                        val obj = arr.getJSONObject(i)
+                        list.add(HabitItem(
+                            obj.getString("id"),
+                            obj.getString("name"),
+                            obj.getString("emoji"),
+                            obj.getBoolean("isDoneToday"),
+                            obj.getInt("streakDays")
+                        ))
+                    }
+                    _habits.value = list
+                } else {
+                    // Default habits if none saved
+                    val defaults = listOf(
+                        HabitItem("1", "Morning walk", "🚶", false, 3),
+                        HabitItem("2", "Read 20 pages", "📚", false, 7)
+                    )
+                    _habits.value = defaults
+                    saveHabits(defaults)
+                }
+            }
+        }
+    }
+
+    private fun saveHabits(list: List<HabitItem>) {
+        viewModelScope.launch {
+            val arr = JSONArray()
+            list.forEach {
+                val obj = JSONObject()
+                obj.put("id", it.id)
+                obj.put("name", it.name)
+                obj.put("emoji", it.emoji)
+                obj.put("isDoneToday", it.isDoneToday)
+                obj.put("streakDays", it.streakDays)
+                arr.put(obj)
+            }
+            prefs.saveHabitsJson(arr.toString())
+        }
     }
 
     fun loadApps(context: Context) {
@@ -109,13 +154,26 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun launchApp(context: Context, packageName: String) {
+    fun launchApp(context: Context, packageName: String, limitMinutes: Int = 0) {
         if (isBlocked(packageName)) return
         recordLaunch(packageName)
+        
         val intent = context.packageManager.getLaunchIntentForPackage(packageName)
         intent?.let {
             it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(it)
+            
+            if (limitMinutes > 0) {
+                viewModelScope.launch {
+                    delay(limitMinutes * 60 * 1000L)
+                    // Close the app by returning home
+                    val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                        addCategory(Intent.CATEGORY_HOME)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(homeIntent)
+                }
+            }
         }
     }
 
@@ -184,7 +242,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     // ---- Time ----
     fun updateTime() {
         val now = Calendar.getInstance()
-        val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val dateFmt = SimpleDateFormat("EEEE, MMM d", Locale.getDefault())
         _currentTime.value = timeFmt.format(now.time)
         _currentDate.value = dateFmt.format(now.time)
@@ -194,15 +252,32 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             in 17..20 -> "Good evening."
             else -> "Good night."
         }
+        
+        if (now.get(Calendar.MINUTE) == 0 && now.get(Calendar.SECOND) == 0) {
+            _vinlandQuote.value = getQuote()
+        }
     }
 
     private fun startTimeClock() {
         viewModelScope.launch {
             while (true) {
-                delay(60_000)
+                delay(1000)
                 updateTime()
             }
         }
+    }
+    
+    private fun getQuote(): String {
+        val quotes = listOf(
+            "I have no enemies. No one has any enemies.",
+            "You're a kind person. You don't have to hurt anyone.",
+            "A true warrior doesn't need a sword.",
+            "Anger is a luxury you cannot afford.",
+            "The heart is like a mirror, it reflects what's in front of it.",
+            "Forgiveness is the highest form of strength.",
+            "Control your anger, or it will control you."
+        )
+        return quotes.random()
     }
 
     // ---- Focus Timer ----
@@ -265,7 +340,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     // ---- Habits ----
     fun toggleHabit(id: String) {
-        _habits.value = _habits.value.map { habit ->
+        val newList = _habits.value.map { habit ->
             if (habit.id == id) {
                 habit.copy(
                     isDoneToday = !habit.isDoneToday,
@@ -273,6 +348,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 )
             } else habit
         }
+        _habits.value = newList
+        saveHabits(newList)
     }
 
     fun addHabit(name: String, emoji: String) {
@@ -282,11 +359,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             name = name,
             emoji = emoji
         )
-        _habits.value = _habits.value + newHabit
+        val newList = _habits.value + newHabit
+        _habits.value = newList
+        saveHabits(newList)
     }
 
     fun deleteHabit(id: String) {
-        _habits.value = _habits.value.filter { it.id != id }
+        val newList = _habits.value.filter { it.id != id }
+        _habits.value = newList
+        saveHabits(newList)
     }
 
     // ---- Notes ----
