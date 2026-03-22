@@ -65,6 +65,3 @@ To create a release on GitHub:
 - Target SDK: 34
 - Minimum SDK: 26
 
-## License
-
-This project is open-source and available under the MIT License.
